@@ -1,11 +1,8 @@
 ~~~
 https://baijiahao.baidu.com/s?id=1617888740370098866&wfr=spider&for=pc
+
 默认为异步方式。
-要实施复制，首先必须打开Master 端的binary log（bin-log）功能，否则无法实现。
-
-因为整个复制过程实际上就是Slave 从Master 端获取该日志然后再在自己身上完全顺序的执行日志中所记录的各种操作
-
-
+必须打开 Master 端的 binary log（bin-log）功能。
 ~~~
 
 
@@ -68,8 +65,8 @@ Slave 的 SQL线程检测到relay-log 中新增加了内容后，会将relay-log
 * **异步（async-mode）**
 
   ~~~
-  默认模式，
-  主节点不主动同步给从节点，
+  默认模式。
+  主节点不主动同步给从节点。
   ~~~
 
 * **半同步（semi-sync）**
@@ -78,4 +75,54 @@ Slave 的 SQL线程检测到relay-log 中新增加了内容后，会将relay-log
   主节点只需要接收到其中一台从节点的返回信息，就会commit事务；否则需要等待直到超时时间然后切换成异步模式再提交；这样做的目的可以使主从数据库的数据延迟缩小，可以提高数据安全性，确保了事务提交后，binlog至少传输到了一个从节点上，不能保证从节点将此事务更新到db中。性能上会有一定的降低，响应时间会变长。
   ~~~
 
+* **同步（sync）**
+
+  ~~~
+  主节点和从节点全部执行了commit并确认才会向客户端返回成功。
+  ~~~
+
+
+
+## binlog记录格式
+
+~~~
+主从复制有三种方式。对应的 binlog 文件的格式 STATEMENT，ROW，MIXED。
+~~~
+
+* SBR（statement-based replication）：基于 SQL 语句的复制。
+
+  ~~~
+  记录sql语句在bin log中，Mysql 5.1.4 及之前的版本都是使用的这种复制格式。
+  优点：只需要记录会修改数据的sql语句到binlog中，减少了binlog日质量，节约I/O，提高性能。
+  缺点：在某些情况下，会导致主从节点中数据不一致（比如sleep(),now()等）。
+  ~~~
+
+* RBR（row-based replication）：基于行的复制。
+
+  ~~~
+  master 将SQL语句分解为基于Row更改的语句并记录在bin log中，只记录哪条数据被修改了，修改成什么样。
+  优点：不会出现某些特定情况下的存储过程、或者函数、或者trigger的调用或者触发无法被正确复制的问题。
+  缺点：会产生大量的日志，尤其是修改table的时候会让日志暴增,同时增加bin log同步时间。也不能通过bin log解析获取执行过的sql语句，只能看到发生的data变更。
+  ~~~
+
+* MBR（mixed-based replication）：混合模式复制。
+
+  ~~~
+  MySQL NDB cluster 7.3 和7.4 使用的MBR。是以上两种模式的混合，对于一般的复制使用STATEMENT模式保存到binlog，对于STATEMENT模式无法复制的操作则使用ROW模式来保存，MySQL会根据执行的SQL语句选择日志保存方式。
+  ~~~
+
   
+
+_____
+
+_____
+
+##  GTID 模式
+
+~~~
+GTID (Global Transaction ID) 是对一个已提交事务生成的全局唯一编号。 实际上是由 UUID + TID 组成。其中 UUID 是一个 MySQL 实例的唯一标识。TID 代表了该实例上已经提交的事务数量，单调递增。
+
+从 MySQL 5.6.5 开始新增了一种基于 GTID 的复制方式。通过 GTID 保证了每个在主库上提交的事务在集群中有一个唯一的ID。这种方式强化了数据库的主备一致性，故障恢复以及容错能力。
+当 master 出现故障进行切换时，由于同一个事务在每台机器上所在的 binlog 名字和位置都不一样，那么怎么找到 slave 当前同步停止点对应新master 上 master_log_file 和 master_log_pos 的位置就成为了难题。
+~~~
+
