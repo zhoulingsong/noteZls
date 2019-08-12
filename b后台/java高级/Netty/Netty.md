@@ -1,6 +1,18 @@
-### ByteBuf读写指针
+### ByteBuf 读写指针
 
 - 在ByteBuffer中，读写指针都是position，而在ByteBuf中，读写指针分别为readerIndex和writerIndex，直观看上去ByteBuffer仅用了一个指针就实现了两个指针的功能，节省了变量，但是当对于ByteBuffer的读写状态切换的时候必须要调用flip方法，而当下一次写之前，必须要将Buffe中的内容读完，再调用clear方法。每次读之前调用flip，写之前调用clear，这样无疑给开发带来了繁琐的步骤，而且内容没有读完是不能写的，这样非常不灵活。相比之下我们看看ByteBuf，读的时候仅仅依赖readerIndex指针，写的时候仅仅依赖writerIndex指针，不需每次读写之前调用对应的方法，而且没有必须一次读完的限制。
+
+~~~
+Pooled和Unpooled：pooled类型的bytebuf是在已经申请好的内存块取一块内存，而Unpooled是直接通过JDK底层代码申请。
+Unsafe和非Unsafe：这里的Unsafe是JDK底层的对象，通过它能够直接操作到内存。
+Heap和Direct：一个是在堆上分配，一个是直接内存。Direct不受GC的控制。
+
+ByteBuf对象是通过ByteBufAllocator来进行生成的
+~~~
+
+
+
+
 
 
 
@@ -43,6 +55,46 @@ eg：ch.pipeline().addLast(new FixedLengthFrameDecoder(31));
 
 1. 固定长度：FixedLengthFrameDecoder
 2. 行：LineBasedFrameDecoder
-3. 分隔符：DelimiterBasedFrameDecoderder
+3. 分隔符：DelimiterBasedFrameDecoder
 
 4. 长度域：LengthFieldBasedFrameDecoder
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#  
+
+#  
+
+~~~
+每个 Channel 对应一个 EventLoop
+
+1）不管是server还是client，每个连接都会对应一个pipeline，该pipeline在Channel被创建的时候创建。
+2）ChannelPipeline是ChannelHandler的容器，它包含了一个ChannelHander形成的列表，且所有ChannelHandler都会注册到ChannelPipeline中。其中ChannelHander用于处理连接的Inbound或者Outbound事件。
+3）ChannelPipeline，它维护了一个有序的ChannelHandler列表，但并非是直接关联，而是通过维护ChannelHandlerContext进行关联。
+4）一个ChannelHandlerContext只能对应一个ChannelHander，只对应一个Channel；而一个ChannelHander则可以对应多个ChannelHandlerContext。
+~~~
+
+
+
+> **ChannelOption**
+
+~~~
+https://www.jianshu.com/p/975b30171352
+~~~
+
+
+
+> **ChannelHandler**
+
