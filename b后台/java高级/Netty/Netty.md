@@ -1,3 +1,5 @@
+
+
 ### ByteBuf 读写指针
 
 - 在ByteBuffer中，读写指针都是position，而在ByteBuf中，读写指针分别为readerIndex和writerIndex，直观看上去ByteBuffer仅用了一个指针就实现了两个指针的功能，节省了变量，但是当对于ByteBuffer的读写状态切换的时候必须要调用flip方法，而当下一次写之前，必须要将Buffe中的内容读完，再调用clear方法。每次读之前调用flip，写之前调用clear，这样无疑给开发带来了繁琐的步骤，而且内容没有读完是不能写的，这样非常不灵活。相比之下我们看看ByteBuf，读的时候仅仅依赖readerIndex指针，写的时候仅仅依赖writerIndex指针，不需每次读写之前调用对应的方法，而且没有必须一次读完的限制。
@@ -98,3 +100,6 @@ https://www.jianshu.com/p/975b30171352
 
 > **ChannelHandler**
 
+
+
+> 
